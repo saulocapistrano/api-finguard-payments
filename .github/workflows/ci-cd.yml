@@ -43,21 +43,21 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: 🛠 Start PostgreSQL
+      - name: 🛠 Iniciar PostgreSQL
         run: |
-          docker run --name postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=payments -p 5432:5432 -d postgres
+          docker run --name postgres -e POSTGRES_USER=saulo -e POSTGRES_PASSWORD=123456 -e POSTGRES_DB=payments_db -p 5432:5432 -d postgres
           echo "Aguardando PostgreSQL iniciar..."
-          sleep 10  # Espera 10 segundos para garantir que o banco esteja pronto
+          sleep 15  # Aguardar o banco estar pronto
 
       - name: 🔍 Verificar se o banco de dados está rodando
         run: docker ps -a
 
       - name: 🔬 Executar testes automatizados
         env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/payments
-          SPRING_DATASOURCE_USERNAME: postgres
-          SPRING_DATASOURCE_PASSWORD: postgres
-        run: mvn test -X  # Adiciona logs detalhados para depuração
+          DATABASE_URL: jdbc:postgresql://localhost:5432/payments_db
+          DATABASE_USERNAME: saulo
+          DATABASE_PASSWORD: 123456
+        run: mvn test -X  # Executa testes com logs detalhados
 
   sonar:
     runs-on: ubuntu-latest

@@ -1,6 +1,5 @@
 package com.finguard.apifinguardpayments.web.api;
 
-
 import com.finguard.apifinguardpayments.domain.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

@@ -47,9 +47,15 @@ jobs:
         run: |
           docker run --name postgres -e POSTGRES_USER=saulo -e POSTGRES_PASSWORD=123456 -e POSTGRES_DB=payments_db -p 5432:5432 -d postgres
           echo "Aguardando PostgreSQL iniciar..."
-          sleep 15  # Aguardar o banco estar pronto
+          sleep 15  # Aguarda o banco estar pronto
 
-      - name: 🔍 Verificar se o banco de dados está rodando
+      - name: 🛠 Iniciar Kafka
+        run: |
+          docker run --name kafka -p 9092:9092 -e KAFKA_ZOOKEEPER_CONNECT=localhost:2181 -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092 -e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092 -e KAFKA_BROKER_ID=1 -d confluentinc/cp-kafka:latest
+          echo "Aguardando Kafka iniciar..."
+          sleep 15  # Aguarda o Kafka estar pronto
+
+      - name: 🔍 Verificar se os containers estão rodando
         run: docker ps -a
 
       - name: 🔬 Executar testes automatizados
@@ -57,6 +63,7 @@ jobs:
           DATABASE_URL: jdbc:postgresql://localhost:5432/payments_db
           DATABASE_USERNAME: saulo
           DATABASE_PASSWORD: 123456
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
         run: mvn test -X  # Executa testes com logs detalhados
 
   sonar:

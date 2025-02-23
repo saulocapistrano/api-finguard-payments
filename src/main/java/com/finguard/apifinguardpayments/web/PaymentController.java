@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
+@RequestMapping("/payments")
 public class PaymentController implements PaymentApi {
 
     private final PaymentService paymentService;

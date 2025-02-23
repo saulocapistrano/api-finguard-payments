@@ -14,34 +14,23 @@ class TestcontainersConfiguration {
 	@Bean
 	@ServiceConnection
 	KafkaContainer kafkaContainer() {
-		KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:latest"));
-		kafka.start();
-		System.setProperty("KAFKA_BOOTSTRAP_SERVERS", kafka.getBootstrapServers());
-		return kafka;
+		return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:latest"));
 	}
 
 	@Bean
 	@ServiceConnection
 	PostgreSQLContainer<?> postgresContainer() {
-		PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(DockerImageName.parse("postgres:15"))
+		return new PostgreSQLContainer<>(DockerImageName.parse("postgres:15"))
 				.withDatabaseName("payments_db")
 				.withUsername("saulo")
 				.withPassword("123456");
-
-		postgres.start();
-		System.setProperty("spring.datasource.url", postgres.getJdbcUrl());
-		System.setProperty("spring.datasource.username", postgres.getUsername());
-		System.setProperty("spring.datasource.password", postgres.getPassword());
-
-		return postgres;
 	}
 
 	@Bean
 	@ServiceConnection(name = "redis")
 	GenericContainer<?> redisContainer() {
-		GenericContainer<?> redis = new GenericContainer<>(DockerImageName.parse("redis:latest"))
+		return new GenericContainer<>(DockerImageName.parse("redis:latest"))
 				.withExposedPorts(6379);
-		redis.start();
-		return redis;
 	}
+
 }

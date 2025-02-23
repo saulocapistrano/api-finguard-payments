@@ -98,6 +98,7 @@ class PaymentControllerTest {
                 .andExpect(jsonPath("$.transactionId").value("txn123"));
     }
 
+
     @Test
     void shouldUpdatePaymentStatus() throws Exception {
         samplePayment.setStatus(PaymentStatus.COMPLETED);
@@ -106,7 +107,7 @@ class PaymentControllerTest {
 
         mockMvc.perform(put("/payments/transaction/{transactionId}/status", "txn123")
                         .with(user("testuser").roles("USER"))
-                        .with(csrf()) // Adicionando CSRF para evitar erro 403
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                         {

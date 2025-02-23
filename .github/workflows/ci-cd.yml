@@ -34,36 +34,31 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15
+        image: postgres
         env:
           POSTGRES_USER: saulo
           POSTGRES_PASSWORD: 123456
           POSTGRES_DB: payments_db
         ports:
           - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U saulo"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      zookeeper:
-        image: confluentinc/cp-zookeeper:latest
-        ports:
-          - 2181:2181
-        env:
-          ZOOKEEPER_CLIENT_PORT: 2181
+        options: --health-cmd="pg_isready -U saulo" --health-interval=10s --health-timeout=5s --health-retries=5
 
       kafka:
-        image: confluentinc/cp-kafka:latest
-        ports:
-          - 9092:9092
+        image: confluentinc/cp-kafka
         env:
-          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+          KAFKA_BROKER_ID: 1
+          KAFKA_ZOOKEEPER_CONNECT: localhost:2181
           KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
           KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-          KAFKA_BROKER_ID: 1
-        options: --link zookeeper:zookeeper
+        ports:
+          - 9092:9092
+        options: --health-cmd="kafka-topics --list --bootstrap-server localhost:9092" --health-interval=10s --health-timeout=5s --health-retries=5
+
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+        options: --health-cmd="redis-cli ping" --health-interval=5s --health-timeout=3s --health-retries=5
 
     steps:
       - name: 🚀 Checkout do repositório
@@ -76,12 +71,8 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: 📌 Debug Environment Variables
-        run: |
-          echo "DATABASE_URL=$DATABASE_URL"
-          echo "DATABASE_USERNAME=$DATABASE_USERNAME"
-          echo "DATABASE_PASSWORD=$DATABASE_PASSWORD"
-          echo "KAFKA_BOOTSTRAP_SERVERS=$KAFKA_BOOTSTRAP_SERVERS"
+      - name: 🛠 Verificar se os serviços estão rodando
+        run: docker ps -a
 
       - name: 🔬 Executar testes automatizados
         env:
@@ -89,6 +80,8 @@ jobs:
           DATABASE_USERNAME: saulo
           DATABASE_PASSWORD: 123456
           KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
         run: mvn test -X  # Executa testes com logs detalhados
 
   sonar:

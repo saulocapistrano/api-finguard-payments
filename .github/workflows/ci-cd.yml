@@ -32,6 +32,39 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: saulo
+          POSTGRES_PASSWORD: 123456
+          POSTGRES_DB: payments_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U saulo"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      zookeeper:
+        image: confluentinc/cp-zookeeper:latest
+        ports:
+          - 2181:2181
+        env:
+          ZOOKEEPER_CLIENT_PORT: 2181
+
+      kafka:
+        image: confluentinc/cp-kafka:latest
+        ports:
+          - 9092:9092
+        env:
+          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+          KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+          KAFKA_BROKER_ID: 1
+        options: --link zookeeper:zookeeper
+
     steps:
       - name: 🚀 Checkout do repositório
         uses: actions/checkout@v3
@@ -43,20 +76,12 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: 🛠 Iniciar PostgreSQL
+      - name: 📌 Debug Environment Variables
         run: |
-          docker run --name postgres -e POSTGRES_USER=saulo -e POSTGRES_PASSWORD=123456 -e POSTGRES_DB=payments_db -p 5432:5432 -d postgres
-          echo "Aguardando PostgreSQL iniciar..."
-          sleep 15  # Aguarda o banco estar pronto
-
-      - name: 🛠 Iniciar Kafka
-        run: |
-          docker run --name kafka -p 9092:9092 -e KAFKA_ZOOKEEPER_CONNECT=localhost:2181 -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092 -e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092 -e KAFKA_BROKER_ID=1 -d confluentinc/cp-kafka:latest
-          echo "Aguardando Kafka iniciar..."
-          sleep 15  # Aguarda o Kafka estar pronto
-
-      - name: 🔍 Verificar se os containers estão rodando
-        run: docker ps -a
+          echo "DATABASE_URL=$DATABASE_URL"
+          echo "DATABASE_USERNAME=$DATABASE_USERNAME"
+          echo "DATABASE_PASSWORD=$DATABASE_PASSWORD"
+          echo "KAFKA_BOOTSTRAP_SERVERS=$KAFKA_BOOTSTRAP_SERVERS"
 
       - name: 🔬 Executar testes automatizados
         env:

@@ -67,10 +67,17 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: 🔍 Verificar serviços
-        run: docker ps -a
+      - name: 🔍 Verificar PostgreSQL e Kafka
+        run: |
+          echo "Aguardando PostgreSQL..."
+          until nc -z localhost 5432; do sleep 1; done
+          echo "PostgreSQL disponível! ✅"
 
-      - name: 🛠 Executar testes
+          echo "Aguardando Kafka..."
+          until nc -z localhost 9092; do sleep 1; done
+          echo "Kafka disponível! ✅"
+
+      - name: 🔬 Executar testes automatizados
         env:
           DATABASE_URL: jdbc:postgresql://localhost:5432/payments_db
           DATABASE_USERNAME: saulo

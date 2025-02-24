@@ -2,6 +2,7 @@ package com.finguard.apifinguardpayments.web;
 
 import com.finguard.apifinguardpayments.application.PaymentService;
 import com.finguard.apifinguardpayments.application.RedisService;
+import com.finguard.apifinguardpayments.config.TestDatabaseConfig;
 import com.finguard.apifinguardpayments.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -28,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 @WebMvcTest(PaymentController.class)
 @ImportAutoConfiguration(exclude = {KafkaAutoConfiguration.class})
+@Import(TestDatabaseConfig.class)
 class PaymentControllerTest {
 
     @Autowired

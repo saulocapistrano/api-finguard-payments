@@ -189,6 +189,7 @@
             </plugin>
 
             <!-- 🔧 Evita erro do SonarQube com settings-security.xml -->
+            <!-- 🔧 Evita erro do SonarQube com settings-security.xml -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>

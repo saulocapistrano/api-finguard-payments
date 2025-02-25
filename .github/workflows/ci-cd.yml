@@ -45,8 +45,9 @@ jobs:
           KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092"
           KAFKA_BROKER_ID: 1
           KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+          KAFKA_CREATE_TOPICS: "payments:1:1"  # Cria um tópico "payments"
         options: >-
-          --health-cmd "kafka-topics --list --bootstrap-server kafka:9092"
+          --health-cmd "kafka-topics --bootstrap-server kafka:9092 --list"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -55,6 +56,11 @@ jobs:
         image: redis:latest
         ports:
           - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: 🚀 Checkout do repositório
@@ -67,7 +73,7 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: 🔍 Verificar PostgreSQL e Kafka
+      - name: 🔍 Verificar serviços antes dos testes
         run: |
           echo "Aguardando PostgreSQL..."
           until nc -z localhost 5432; do sleep 1; done
@@ -77,12 +83,18 @@ jobs:
           until nc -z localhost 9092; do sleep 1; done
           echo "Kafka disponível! ✅"
 
+          echo "Aguardando Redis..."
+          until nc -z localhost 6379; do sleep 1; done
+          echo "Redis disponível! ✅"
+
       - name: 🔬 Executar testes automatizados
         env:
           DATABASE_URL: jdbc:postgresql://localhost:5432/payments_db
           DATABASE_USERNAME: saulo
           DATABASE_PASSWORD: 123456
           KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+          REDIS_HOST: redis
+          REDIS_PORT: 6379
         run: mvn test -X
 
   build:

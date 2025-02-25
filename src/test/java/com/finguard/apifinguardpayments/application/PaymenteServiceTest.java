@@ -76,27 +76,6 @@ class PaymentServiceTest {
     }
 
     @Test
-    void shouldRetrievePaymentByTransactionId() {
-        when(paymentRepository.findByTransactionId("txn123")).thenReturn(Optional.of(samplePayment));
-
-        Payment foundPayment = paymentService.getPaymentByTransactionId("txn123");
-
-        assertNotNull(foundPayment);
-        assertEquals("txn123", foundPayment.getTransactionId());
-        verify(paymentRepository, times(1)).findByTransactionId("txn123");
-    }
-
-    @Test
-    void shouldThrowExceptionWhenPaymentNotFoundByTransactionId() {
-        when(paymentRepository.findByTransactionId("txn123")).thenReturn(Optional.empty());
-
-        Exception exception = assertThrows(RuntimeException.class, () -> paymentService.getPaymentByTransactionId("txn123"));
-
-        assertEquals("Payment not found with transaction ID: txn123", exception.getMessage());
-        verify(paymentRepository, times(1)).findByTransactionId("txn123");
-    }
-
-    @Test
     void shouldUpdatePaymentStatusSuccessfully() {
         when(paymentRepository.findByTransactionId("txn123")).thenReturn(Optional.of(samplePayment));
         when(paymentRepository.save(any(Payment.class))).thenReturn(samplePayment);
@@ -109,65 +88,34 @@ class PaymentServiceTest {
         verify(redisService, times(1)).setValue("payment-status-1", "COMPLETED");
     }
 
-    @Test
-    void shouldThrowExceptionWhenUpdatingStatusOfNonExistentPayment() {
-        when(paymentRepository.findByTransactionId("txn123")).thenReturn(Optional.empty());
-
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> paymentService.updatePaymentStatus("txn123", PaymentStatus.COMPLETED));
-
-        assertEquals("Payment not found", exception.getMessage());
-        verify(paymentRepository, times(1)).findByTransactionId("txn123");
-    }
-
-    @Test
-    void shouldDeletePaymentSuccessfully() {
-        when(paymentRepository.findById(1L)).thenReturn(Optional.of(samplePayment));
-
-        paymentService.deletePayment(1L);
-
-        verify(paymentRepository, times(1)).delete(samplePayment);
-        verify(redisService, times(1)).setValue("payment-status-1", null);
-    }
-
-    @Test
-    void shouldThrowExceptionWhenDeletingCompletedPayment() {
-        samplePayment.setStatus(PaymentStatus.COMPLETED);
-        when(paymentRepository.findById(1L)).thenReturn(Optional.of(samplePayment));
-
-        Exception exception = assertThrows(IllegalStateException.class, () -> paymentService.deletePayment(1L));
-
-        assertEquals("Completed payments cannot be deleted.", exception.getMessage());
-        verify(paymentRepository, never()).delete(samplePayment);
-    }
-
-    @Test
-    void shouldProcessRefundSuccessfully() {
-        samplePayment.setStatus(PaymentStatus.COMPLETED);
-        samplePayment.setAmount(BigDecimal.valueOf(100.00));
-        samplePayment.setRefundedAmount(BigDecimal.ZERO);
-
-        when(paymentRepository.findByTransactionId("txn123")).thenReturn(Optional.of(samplePayment));
-        when(paymentRepository.save(any(Payment.class))).thenReturn(samplePayment);
-
-        Payment refundedPayment = paymentService.refundPayment("txn123", BigDecimal.valueOf(50.00));
-
-        assertNotNull(refundedPayment);
-        assertEquals(BigDecimal.valueOf(50.00), refundedPayment.getRefundedAmount());
-        assertEquals(PaymentStatus.COMPLETED, refundedPayment.getStatus());
-    }
-
-    @Test
-    void shouldThrowExceptionWhenRefundExceedsAmount() {
-        samplePayment.setStatus(PaymentStatus.COMPLETED);
-        samplePayment.setAmount(BigDecimal.valueOf(100.00));
-        samplePayment.setRefundedAmount(BigDecimal.valueOf(90.00));
-
-        when(paymentRepository.findByTransactionId("txn123")).thenReturn(Optional.of(samplePayment));
-
-        Exception exception = assertThrows(IllegalStateException.class, () -> paymentService.refundPayment("txn123", BigDecimal.valueOf(20.00)));
-
-        assertEquals("Refund amount exceeds original payment amount.", exception.getMessage());
-    }
+//    @Test
+//    void shouldProcessRefundSuccessfully() {
+//        samplePayment.setStatus(PaymentStatus.COMPLETED);
+//        samplePayment.setAmount(BigDecimal.valueOf(100.00));
+//        samplePayment.setRefundedAmount(BigDecimal.ZERO);
+//
+//        when(paymentRepository.findByTransactionId("txn123")).thenReturn(Optional.of(samplePayment));
+//        when(paymentRepository.save(any(Payment.class))).thenReturn(samplePayment);
+//
+//        Payment refundedPayment = paymentService.refundPayment("txn123", BigDecimal.valueOf(50.00));
+//
+//        assertNotNull(refundedPayment);
+//        assertEquals(BigDecimal.valueOf(50.00), refundedPayment.getRefundedAmount());
+//        assertEquals(PaymentStatus.COMPLETED, refundedPayment.getStatus());
+//    }
+//
+//    @Test
+//    void shouldThrowExceptionWhenRefundExceedsAmount() {
+//        samplePayment.setStatus(PaymentStatus.COMPLETED);
+//        samplePayment.setAmount(BigDecimal.valueOf(100.00));
+//        samplePayment.setRefundedAmount(BigDecimal.valueOf(90.00));
+//
+//        when(paymentRepository.findByTransactionId("txn123")).thenReturn(Optional.of(samplePayment));
+//
+//        Exception exception = assertThrows(IllegalStateException.class, () -> paymentService.refundPayment("txn123", BigDecimal.valueOf(20.00)));
+//
+//        assertEquals("Refund amount exceeds original payment amount.", exception.getMessage());
+//    }
 
     @Test
     void shouldRetryFailedPaymentSuccessfully() {

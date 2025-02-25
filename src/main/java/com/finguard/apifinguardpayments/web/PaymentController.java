@@ -68,8 +68,8 @@ public class PaymentController implements PaymentApi {
     }
 
     @Override
-    public ResponseEntity<Payment> refundPayment(String transactionId, BigDecimal amount) {
-        return ResponseEntity.ok(paymentService.refundPayment(transactionId, amount));
+    public ResponseEntity<Refund> processRefund(String transactionId, BigDecimal amount) {
+        return ResponseEntity.ok(paymentService.processRefund(transactionId, amount));
     }
 
     @Override

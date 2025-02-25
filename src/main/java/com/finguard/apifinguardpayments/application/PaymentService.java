@@ -1,7 +1,9 @@
 package com.finguard.apifinguardpayments.application;
 
 import com.finguard.apifinguardpayments.domain.*;
+import com.finguard.apifinguardpayments.infrastructure.FraudAnalysisRepository;
 import com.finguard.apifinguardpayments.infrastructure.PaymentRepository;
+import com.finguard.apifinguardpayments.infrastructure.RefundRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,10 +15,17 @@ import java.util.List;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final FraudAnalysisRepository fraudAnalysisRepository;
+    private final RefundRepository refundRepository;
     private final RedisService redisService;
 
-    public PaymentService(PaymentRepository paymentRepository, RedisService redisService) {
+    public PaymentService(PaymentRepository paymentRepository,
+                          FraudAnalysisRepository fraudAnalysisRepository,
+                          RefundRepository refundRepository,
+                          RedisService redisService) {
         this.paymentRepository = paymentRepository;
+        this.fraudAnalysisRepository = fraudAnalysisRepository;
+        this.refundRepository = refundRepository;
         this.redisService = redisService;
     }
 
@@ -24,16 +33,6 @@ public class PaymentService {
     //       CRUD OPERATIONS       //
     // =========================== //
 
-    /**
-     * Creates a new payment with default values.
-     * @param transactionId The unique transaction ID.
-     * @param amount The payment amount.
-     * @param currency The currency of the payment.
-     * @param paymentMethod The payment method used.
-     * @param payerId The payer's unique identifier.
-     * @param payeeId The payee's unique identifier.
-     * @return The newly created payment.
-     */
     @Transactional
     public Payment createPayment(String transactionId, BigDecimal amount, Currency currency,
                                  PaymentMethod paymentMethod, String payerId, String payeeId) {
@@ -51,32 +50,16 @@ public class PaymentService {
         return savedPayment;
     }
 
-    /**
-     * Retrieves a payment by its ID.
-     * @param id The ID of the payment.
-     * @return The found payment.
-     */
     public Payment getPaymentById(Long id) {
         return paymentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Payment not found with ID: " + id));
     }
 
-    /**
-     * Retrieves a payment by its transaction ID.
-     * @param transactionId The unique transaction ID.
-     * @return The found payment.
-     */
     public Payment getPaymentByTransactionId(String transactionId) {
         return paymentRepository.findByTransactionId(transactionId)
                 .orElseThrow(() -> new RuntimeException("Payment not found with transaction ID: " + transactionId));
     }
 
-    /**
-     * Updates the status of a payment.
-     * @param transactionId The unique transaction ID.
-     * @param status The new payment status.
-     * @return The updated payment.
-     */
     @Transactional
     public Payment updatePaymentStatus(String transactionId, PaymentStatus status) {
         Payment payment = paymentRepository.findByTransactionId(transactionId)
@@ -89,10 +72,6 @@ public class PaymentService {
         return payment;
     }
 
-    /**
-     * Deletes a payment by its ID, ensuring it is not completed.
-     * @param id The ID of the payment to delete.
-     */
     @Transactional
     public void deletePayment(Long id) {
         Payment payment = paymentRepository.findById(id)
@@ -110,45 +89,22 @@ public class PaymentService {
     //       QUERY METHODS         //
     // =========================== //
 
-    /**
-     * Retrieves payments by status.
-     * @param status The payment status.
-     * @return List of payments with the specified status.
-     */
     public List<Payment> getPaymentsByStatus(PaymentStatus status) {
         return paymentRepository.findByStatus(status);
     }
 
-    /**
-     * Retrieves payments made by a specific payer.
-     * @param payerId The payer's unique identifier.
-     * @return List of payments made by the specified payer.
-     */
     public List<Payment> getPaymentsByPayerId(String payerId) {
         return paymentRepository.findByPayerId(payerId);
     }
 
-    /**
-     * Retrieves payments received by a specific payee.
-     * @param payeeId The payee's unique identifier.
-     * @return List of payments received by the specified payee.
-     */
     public List<Payment> getPaymentsByPayeeId(String payeeId) {
         return paymentRepository.findByPayeeId(payeeId);
     }
 
-    /**
-     * Retrieves all fraudulent payments.
-     * @return List of fraudulent payments.
-     */
     public List<Payment> getFraudulentPayments() {
         return paymentRepository.findByIsFraudulentTrue();
     }
 
-    /**
-     * Retrieves refundable payments (COMPLETED and not fully refunded).
-     * @return List of refundable payments.
-     */
     public List<Payment> getRefundablePayments() {
         return paymentRepository.findByStatusAndRefundedAmountLessThan(PaymentStatus.COMPLETED, BigDecimal.ZERO);
     }
@@ -158,34 +114,58 @@ public class PaymentService {
     // =========================== //
 
     /**
-     * Processes a refund for a payment.
+     * Registers a refund instead of updating the payment entity directly.
      * @param transactionId The transaction ID of the payment.
      * @param amount The refund amount.
-     * @return The updated payment.
+     * @return The refund record.
      */
     @Transactional
-    public Payment refundPayment(String transactionId, BigDecimal amount) {
+    public Refund processRefund(String transactionId, BigDecimal amount) {
         Payment payment = paymentRepository.findByTransactionId(transactionId)
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
 
         if (payment.getStatus() != PaymentStatus.COMPLETED) {
             throw new IllegalStateException("Only completed payments can be refunded.");
         }
-        if (payment.getRefundedAmount().add(amount).compareTo(payment.getAmount()) > 0) {
-            throw new IllegalStateException("Refund amount exceeds original payment amount.");
+        if (amount.compareTo(payment.getAmount()) > 0) {
+            throw new IllegalStateException("Refund amount exceeds the original payment.");
         }
 
-        payment.setRefundedAmount(payment.getRefundedAmount().add(amount));
-        if (payment.getRefundedAmount().compareTo(payment.getAmount()) == 0) {
-            payment.setStatus(PaymentStatus.REFUNDED);
-        }
-        return paymentRepository.save(payment);
+        Refund refund = new Refund(
+                payment,
+                amount,
+                LocalDateTime.now(),
+                "system",
+                "Refund processed successfully"
+        );
+
+        refundRepository.save(refund);
+
+        return refund;
     }
 
     /**
-     * Retries a failed payment.
-     * @param paymentId The ID of the payment to retry.
+     * Flags a payment as fraudulent and records the details.
+     * @param transactionId The transaction ID of the payment.
+     * @param reason The reason for marking the payment as fraud.
+     * @param riskScore A numeric risk score for fraud detection.
+     * @param flaggedBy The identifier of the entity flagging the fraud.
      */
+    @Transactional
+    public void flagAsFraudulent(String transactionId, String reason, BigDecimal riskScore, String flaggedBy) {
+        Payment payment = paymentRepository.findByTransactionId(transactionId)
+                .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
+
+        payment.setStatus(PaymentStatus.FRAUDULENT);
+        payment.setUpdatedAt(LocalDateTime.now());
+        paymentRepository.save(payment);
+
+        FraudAnalysis fraudAnalysis = new FraudAnalysis(payment, reason, riskScore, flaggedBy);
+        fraudAnalysisRepository.save(fraudAnalysis);
+
+        redisService.setValue("payment-status-" + payment.getId(), PaymentStatus.FRAUDULENT.name());
+    }
+
     @Transactional
     public void retryPayment(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
@@ -210,32 +190,14 @@ public class PaymentService {
     //      CACHE OPERATIONS       //
     // =========================== //
 
-    /**
-     * Caches the payment status in Redis.
-     * @param paymentId The payment ID.
-     * @param status The payment status.
-     */
     private void cachePaymentStatus(Long paymentId, String status) {
         redisService.setValue("payment-status-" + paymentId, status);
     }
 
-    /**
-     * Retrieves the cached payment status from Redis.
-     * @param paymentId The payment ID.
-     * @return The cached payment status.
-     */
     public String getCachedPaymentStatus(Long paymentId) {
         return (String) redisService.getValue("payment-status-" + paymentId);
     }
 
-    /**
-     * Validates the required details for a payment.
-     * @param amount The payment amount (must be greater than zero).
-     * @param currency The currency of the payment (cannot be null).
-     * @param paymentMethod The payment method used (cannot be null).
-     * @param payerId The payer's unique identifier (cannot be null or empty).
-     * @param payeeId The payee's unique identifier (cannot be null or empty).
-     */
     private void validatePaymentDetails(BigDecimal amount, Currency currency, PaymentMethod paymentMethod,
                                         String payerId, String payeeId) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
@@ -254,5 +216,4 @@ public class PaymentService {
             throw new IllegalArgumentException("Payee ID is required.");
         }
     }
-
 }

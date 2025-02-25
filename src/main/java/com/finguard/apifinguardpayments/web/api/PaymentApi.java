@@ -44,8 +44,8 @@ public interface PaymentApi {
     ResponseEntity<List<Payment>> getFraudulentPayments();
 
     @PostMapping("/refund")
-    ResponseEntity<Payment> refundPayment(@RequestParam String transactionId,
-                                          @RequestParam BigDecimal amount);
+    ResponseEntity<Refund> processRefund(@RequestParam("transactionId") String transactionId,
+                                         @RequestParam("amount") BigDecimal amount);
 
     @PostMapping("/retry/{id}")
     ResponseEntity<Void> retryPayment(@PathVariable Long id);

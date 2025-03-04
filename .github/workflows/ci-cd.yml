@@ -40,17 +40,15 @@ jobs:
         ports:
           - 9092:9092
         env:
-          KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
-          KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
-          KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092"
           KAFKA_BROKER_ID: 1
+          KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+          KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
           KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-          KAFKA_CREATE_TOPICS: "payments:1:1"  # Cria um tópico "payments"
         options: >-
-          --health-cmd "kafka-topics --bootstrap-server kafka:9092 --list"
+          --health-cmd "kafka-topics --bootstrap-server kafka:9092 --list || exit 1"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
 
       redis:
         image: redis:latest
@@ -86,6 +84,9 @@ jobs:
           echo "Aguardando Redis..."
           until nc -z localhost 6379; do sleep 1; done
           echo "Redis disponível! ✅"
+
+          echo "Criando tópicos no Kafka..."
+          docker exec kafka kafka-topics --create --topic payments --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 || echo "Tópico já existe."
 
       - name: 🔬 Executar testes automatizados
         env:

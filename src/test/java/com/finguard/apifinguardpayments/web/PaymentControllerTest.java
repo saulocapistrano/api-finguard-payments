@@ -46,36 +46,46 @@ class PaymentControllerTest {
 
     @BeforeEach
     void setUp() {
-        samplePayment = new Payment(
-                1L, "txn123", BigDecimal.valueOf(100.00), Currency.USD,
-                PaymentStatus.PENDING, PaymentMethod.CREDIT_CARD, RecurrenceType.ONCE,
-                false, null, "payer123", "payee123", null, null, BigDecimal.ZERO,
-                null, null, null, 0, null, null
-        );
+        // Em vez de usar o construtor cheio que não existe, use o no-args e os setters:
+        samplePayment = new Payment();
+        samplePayment.setId(1L);
+        samplePayment.setTransactionId("txn123");
+        samplePayment.setAmount(BigDecimal.valueOf(100.00));
+        samplePayment.setCurrency(Currency.USD);
+        samplePayment.setStatus(PaymentStatus.PENDING);
+        samplePayment.setPaymentMethod(PaymentMethod.CREDIT_CARD);
+        samplePayment.setRecurrence(RecurrenceType.ONCE);
+        samplePayment.setFraudulent(false);
+        samplePayment.setPayerId("payer123");
+        samplePayment.setPayeeId("payee123");
+        samplePayment.setRefundedAmount(BigDecimal.ZERO);
+        // ... e assim por diante, caso precise de mais campos
     }
+
 
     @Test
     void shouldCreatePaymentSuccessfully() throws Exception {
-        when(paymentService.createPayment(any(), any(), any(), any(), any(), any()))
+        // Se o service agora recebe um PaymentRequestDTO como único parâmetro, faça:
+        when(paymentService.createPayment(any()))
                 .thenReturn(samplePayment);
 
         mockMvc.perform(post("/payments")
-                        .with(user("testuser").roles("USER")) // Simula um usuário autenticado
-                        .with(csrf()) // Adiciona o CSRF token para evitar erro 403
+                        .with(user("testuser").roles("USER"))
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                        {
-                            "transactionId": "txn123",
-                            "amount": 100.00,
-                            "currency": "USD",
-                            "paymentMethod": "CREDIT_CARD",
-                            "payerId": "payer123",
-                            "payeeId": "payee123"
-                        }
-                        """))
+                    {
+                        "amount": 100.00,
+                        "currency": "USD",
+                        "paymentMethod": "CREDIT_CARD",
+                        "payerId": "payer123",
+                        "payeeId": "payee123"
+                    }
+                    """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.transactionId").value("txn123"));
     }
+
 
 
     @Test

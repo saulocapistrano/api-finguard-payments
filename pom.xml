@@ -22,7 +22,13 @@
         <java.version>21</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
+
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.organization>finguard</sonar.organization>
+        <sonar.projectKey>finguard_api-finguard-payments</sonar.projectKey>
     </properties>
+
+
 
     <dependencies>
 
@@ -188,8 +194,11 @@
                 </configuration>
             </plugin>
 
-            <!-- 🔧 Evita erro do SonarQube com settings-security.xml -->
-            <!-- 🔧 Evita erro do SonarQube com settings-security.xml -->
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>4.0.0.4121</version>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>

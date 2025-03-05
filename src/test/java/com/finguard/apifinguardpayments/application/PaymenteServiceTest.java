@@ -1,7 +1,12 @@
 package com.finguard.apifinguardpayments.application;
 
 import com.finguard.apifinguardpayments.domain.*;
+import com.finguard.apifinguardpayments.infrastructure.FraudAnalysisRepository;
+import com.finguard.apifinguardpayments.infrastructure.PaymentMetadataRepository;
 import com.finguard.apifinguardpayments.infrastructure.PaymentRepository;
+import com.finguard.apifinguardpayments.infrastructure.RefundRepository;
+import com.finguard.apifinguardpayments.web.mapper.PaymentMapper;
+import com.finguard.apifinguardpayments.web.request.PaymentRequestDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,9 +15,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -22,37 +29,85 @@ class PaymentServiceTest {
     private PaymentRepository paymentRepository;
 
     @Mock
+    private PaymentMetadataRepository paymentMetadataRepository;
+
+    @Mock
+    private FraudAnalysisRepository fraudAnalysisRepository;
+
+    @Mock
+    private RefundRepository refundRepository;
+
+    @Mock
     private RedisService redisService;
+
+    @Mock
+    private PaymentMapper paymentMapper;
 
     @InjectMocks
     private PaymentService paymentService;
+
 
     private Payment samplePayment;
 
     @BeforeEach
     void setUp() {
-        samplePayment = new Payment(
-                1L, "txn123", BigDecimal.valueOf(100.00), Currency.USD,
-                PaymentStatus.PENDING, PaymentMethod.CREDIT_CARD, RecurrenceType.ONCE,
-                false, null, "payer123", "payee123", null, null, BigDecimal.ZERO,
-                null, null, null, 0, null, null
-        );
+        // Usar construtor vazio e setters
+        samplePayment = new Payment();
+        samplePayment.setId(1L);
+        samplePayment.setTransactionId("txn123");
+        samplePayment.setAmount(BigDecimal.valueOf(100.00));
+        samplePayment.setCurrency(Currency.USD);
+        samplePayment.setStatus(PaymentStatus.PENDING);
+        samplePayment.setPaymentMethod(PaymentMethod.CREDIT_CARD);
+        samplePayment.setRecurrence(RecurrenceType.ONCE);
+        samplePayment.setFraudulent(false);
+        samplePayment.setFraudReason(null);
+        samplePayment.setPayerId("payer123");
+        samplePayment.setPayeeId("payee123");
+        samplePayment.setDescription(null);
+        samplePayment.setMetadata((Map<String, String>) null);
+        samplePayment.setRefundedAmount(BigDecimal.ZERO);
+        samplePayment.setPaymentGateway(null);
+        samplePayment.setPaymentDate(null);
+        samplePayment.setCancellationReason(null);
+        samplePayment.setRetryCount(0);
+        samplePayment.setCreatedAt(null);
+        samplePayment.setUpdatedAt(null);
     }
 
+    // No teste do createPayment
     @Test
     void shouldCreatePaymentSuccessfully() {
+        PaymentRequestDTO dto = new PaymentRequestDTO();
+        dto.setAmount(BigDecimal.valueOf(100.00));
+        dto.setCurrency(Currency.USD);
+        dto.setPaymentMethod(PaymentMethod.CREDIT_CARD);
+        dto.setPayerId("payer123");
+        dto.setPayeeId("payee123");
+
+        // Este é o objeto Payment que o mapper retornará
+        Payment paymentFromMapper = new Payment();
+        paymentFromMapper.setTransactionId("txn123");
+        paymentFromMapper.setAmount(BigDecimal.valueOf(100.00));
+        paymentFromMapper.setCurrency(Currency.USD);
+        paymentFromMapper.setPaymentMethod(PaymentMethod.CREDIT_CARD);
+        paymentFromMapper.setPayerId("payer123");
+        paymentFromMapper.setPayeeId("payee123");
+        paymentFromMapper.setStatus(PaymentStatus.PENDING);
+
+        // Configura o comportamento do mock
+        when(paymentMapper.toEntity(dto)).thenReturn(paymentFromMapper);
+
         when(paymentRepository.save(any(Payment.class))).thenReturn(samplePayment);
 
-        Payment createdPayment = paymentService.createPayment(
-                "txn123", BigDecimal.valueOf(100.00), Currency.USD,
-                PaymentMethod.CREDIT_CARD, "payer123", "payee123"
-        );
+        Payment createdPayment = paymentService.createPayment(dto);
 
         assertNotNull(createdPayment);
         assertEquals(PaymentStatus.PENDING, createdPayment.getStatus());
         verify(paymentRepository, times(1)).save(any(Payment.class));
         verify(redisService, times(1)).setValue(anyString(), anyString());
     }
+
 
     @Test
     void shouldRetrievePaymentById() {
@@ -87,35 +142,6 @@ class PaymentServiceTest {
         verify(paymentRepository, times(1)).save(samplePayment);
         verify(redisService, times(1)).setValue("payment-status-1", "COMPLETED");
     }
-
-//    @Test
-//    void shouldProcessRefundSuccessfully() {
-//        samplePayment.setStatus(PaymentStatus.COMPLETED);
-//        samplePayment.setAmount(BigDecimal.valueOf(100.00));
-//        samplePayment.setRefundedAmount(BigDecimal.ZERO);
-//
-//        when(paymentRepository.findByTransactionId("txn123")).thenReturn(Optional.of(samplePayment));
-//        when(paymentRepository.save(any(Payment.class))).thenReturn(samplePayment);
-//
-//        Payment refundedPayment = paymentService.refundPayment("txn123", BigDecimal.valueOf(50.00));
-//
-//        assertNotNull(refundedPayment);
-//        assertEquals(BigDecimal.valueOf(50.00), refundedPayment.getRefundedAmount());
-//        assertEquals(PaymentStatus.COMPLETED, refundedPayment.getStatus());
-//    }
-//
-//    @Test
-//    void shouldThrowExceptionWhenRefundExceedsAmount() {
-//        samplePayment.setStatus(PaymentStatus.COMPLETED);
-//        samplePayment.setAmount(BigDecimal.valueOf(100.00));
-//        samplePayment.setRefundedAmount(BigDecimal.valueOf(90.00));
-//
-//        when(paymentRepository.findByTransactionId("txn123")).thenReturn(Optional.of(samplePayment));
-//
-//        Exception exception = assertThrows(IllegalStateException.class, () -> paymentService.refundPayment("txn123", BigDecimal.valueOf(20.00)));
-//
-//        assertEquals("Refund amount exceeds original payment amount.", exception.getMessage());
-//    }
 
     @Test
     void shouldRetryFailedPaymentSuccessfully() {

@@ -194,10 +194,11 @@
                 </configuration>
             </plugin>
 
+
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
-                <version>4.0.0.4121</version>
+                <version>3.9.1.2184</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -140,7 +140,7 @@ jobs:
       - name: 📊 Analisar qualidade do código com SonarCloud
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn sonar:sonar \
+        run: mvn verify sonar:sonar \
           -Dsonar.projectKey=finguard_api-finguard-payments \
           -Dsonar.organization=finguard \
           -Dsonar.host.url=https://sonarcloud.io \

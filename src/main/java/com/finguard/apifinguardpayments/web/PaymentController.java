@@ -1,17 +1,18 @@
 package com.finguard.apifinguardpayments.web;
 
-
 import com.finguard.apifinguardpayments.application.PaymentService;
-import com.finguard.apifinguardpayments.domain.*;
+import com.finguard.apifinguardpayments.domain.Payment;
+import com.finguard.apifinguardpayments.domain.PaymentStatus;
+import com.finguard.apifinguardpayments.domain.Refund;
 import com.finguard.apifinguardpayments.web.api.PaymentApi;
+import com.finguard.apifinguardpayments.web.request.PaymentRequestDTO;
+import com.finguard.apifinguardpayments.web.request.RefundRequestDTO;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/payments")
 public class PaymentController implements PaymentApi {
 
     private final PaymentService paymentService;
@@ -21,24 +22,27 @@ public class PaymentController implements PaymentApi {
     }
 
     @Override
-    public ResponseEntity<Payment> createPayment(String transactionId, BigDecimal amount, Currency currency,
-                                                 PaymentMethod paymentMethod, String payerId, String payeeId) {
-        return ResponseEntity.ok(paymentService.createPayment(transactionId, amount, currency, paymentMethod, payerId, payeeId));
+    public ResponseEntity<Payment> createPayment(PaymentRequestDTO paymentRequest) {
+        Payment createdPayment = paymentService.createPayment(paymentRequest);
+        return ResponseEntity.ok(createdPayment);
     }
 
     @Override
     public ResponseEntity<Payment> getPaymentById(Long id) {
-        return ResponseEntity.ok(paymentService.getPaymentById(id));
+        Payment payment = paymentService.getPaymentById(id);
+        return ResponseEntity.ok(payment);
     }
 
     @Override
     public ResponseEntity<Payment> getPaymentByTransactionId(String transactionId) {
-        return ResponseEntity.ok(paymentService.getPaymentByTransactionId(transactionId));
+        Payment payment = paymentService.getPaymentByTransactionId(transactionId);
+        return ResponseEntity.ok(payment);
     }
 
     @Override
     public ResponseEntity<Payment> updatePaymentStatus(String transactionId, PaymentStatus status) {
-        return ResponseEntity.ok(paymentService.updatePaymentStatus(transactionId, status));
+        Payment updatedPayment = paymentService.updatePaymentStatus(transactionId, status);
+        return ResponseEntity.ok(updatedPayment);
     }
 
     @Override
@@ -49,27 +53,32 @@ public class PaymentController implements PaymentApi {
 
     @Override
     public ResponseEntity<List<Payment>> getPaymentsByStatus(PaymentStatus status) {
-        return ResponseEntity.ok(paymentService.getPaymentsByStatus(status));
+        List<Payment> payments = paymentService.getPaymentsByStatus(status);
+        return ResponseEntity.ok(payments);
     }
 
     @Override
     public ResponseEntity<List<Payment>> getPaymentsByPayerId(String payerId) {
-        return ResponseEntity.ok(paymentService.getPaymentsByPayerId(payerId));
+        List<Payment> payments = paymentService.getPaymentsByPayerId(payerId);
+        return ResponseEntity.ok(payments);
     }
 
     @Override
     public ResponseEntity<List<Payment>> getPaymentsByPayeeId(String payeeId) {
-        return ResponseEntity.ok(paymentService.getPaymentsByPayeeId(payeeId));
+        List<Payment> payments = paymentService.getPaymentsByPayeeId(payeeId);
+        return ResponseEntity.ok(payments);
     }
 
     @Override
     public ResponseEntity<List<Payment>> getFraudulentPayments() {
-        return ResponseEntity.ok(paymentService.getFraudulentPayments());
+        List<Payment> fraudulentPayments = paymentService.getFraudulentPayments();
+        return ResponseEntity.ok(fraudulentPayments);
     }
 
     @Override
-    public ResponseEntity<Refund> processRefund(String transactionId, BigDecimal amount) {
-        return ResponseEntity.ok(paymentService.processRefund(transactionId, amount));
+    public ResponseEntity<Refund> processRefund(RefundRequestDTO refundRequest) {
+        Refund refund = paymentService.processRefund(refundRequest.getTransactionId(), refundRequest.getAmount());
+        return ResponseEntity.ok(refund);
     }
 
     @Override
@@ -80,6 +89,7 @@ public class PaymentController implements PaymentApi {
 
     @Override
     public ResponseEntity<String> getCachedPaymentStatus(Long id) {
-        return ResponseEntity.ok(paymentService.getCachedPaymentStatus(id));
+        String status = paymentService.getCachedPaymentStatus(id);
+        return ResponseEntity.ok(status);
     }
 }

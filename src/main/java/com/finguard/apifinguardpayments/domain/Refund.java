@@ -21,7 +21,7 @@ public class Refund {
     @JoinColumn(name = "payment_id", nullable = false)
     private Payment payment;
 
-    @Column(name = "amount", nullable = false)
+    @Column(name = "refunded_amount", nullable = false)
     private BigDecimal amount;
 
     @Column(name = "refunded_at", nullable = false)
@@ -34,13 +34,11 @@ public class Refund {
     private String reason;
 
     /**
-     * Construtor para criar um novo reembolso.
-     *
-     * @param payment O pagamento associado ao reembolso.
-     * @param amount O valor reembolsado.
-     * @param refundedAt A data e hora do reembolso.
-     * @param refundedBy Quem processou o reembolso.
-     * @param reason Motivo do reembolso.
+     * @param payment
+     * @param amount
+     * @param refundedAt
+     * @param refundedBy
+     * @param reason
      */
     public Refund(Payment payment, BigDecimal amount, LocalDateTime refundedAt, String refundedBy, String reason) {
         this.payment = payment;

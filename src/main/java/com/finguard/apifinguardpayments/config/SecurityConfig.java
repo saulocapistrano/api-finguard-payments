@@ -13,12 +13,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // Desativa CSRF para permitir POST e DELETE sem erro 403
+                .csrf(csrf -> csrf.disable()) // Desativa CSRF para permitir requisições POST e DELETE no Postman
+                .cors(cors -> {}) // Habilita CORS para permitir acesso externo (se precisar)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/payments/**").permitAll() // Permite acesso a todos os endpoints sem autenticação
-                        .anyRequest().authenticated()
-                )
-                .httpBasic(); // Habilita autenticação básica (se necessário)
+                        .anyRequest().permitAll() // Permite acesso a TODOS os endpoints sem autenticação
+                );
 
         return http.build();
     }

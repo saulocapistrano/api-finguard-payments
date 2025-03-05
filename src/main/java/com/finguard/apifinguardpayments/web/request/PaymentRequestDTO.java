@@ -1,9 +1,8 @@
 package com.finguard.apifinguardpayments.web.request;
 
 import com.finguard.apifinguardpayments.domain.Currency;
+import com.finguard.apifinguardpayments.domain.Payment;
 import com.finguard.apifinguardpayments.domain.PaymentMethod;
-import com.finguard.apifinguardpayments.domain.PaymentStatus;
-import com.finguard.apifinguardpayments.domain.RecurrenceType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -23,11 +22,6 @@ public class PaymentRequestDTO {
     @NotNull(message = "Payment method is required")
     private PaymentMethod paymentMethod;
 
-    private PaymentStatus status;
-    private RecurrenceType recurrence;
-    private Boolean isFraudulent;
-    private String fraudReason;
-
     @NotBlank(message = "Payer ID is required")
     private String payerId;
 
@@ -36,28 +30,23 @@ public class PaymentRequestDTO {
 
     private String description;
     private Map<String, String> metadata;
-    private BigDecimal refundedAmount;
-    private String paymentGateway;
-    private String cancellationReason;
 
-    public PaymentRequestDTO() {
-    }
+    public PaymentRequestDTO() {}
 
-    public PaymentRequestDTO(BigDecimal amount, Currency currency, PaymentMethod paymentMethod, PaymentStatus status, RecurrenceType recurrence, Boolean isFraudulent, String fraudReason, String payerId, String payeeId, String description, Map<String, String> metadata, BigDecimal refundedAmount, String paymentGateway, String cancellationReason) {
+    public PaymentRequestDTO(BigDecimal amount, Currency currency, PaymentMethod paymentMethod,
+                             String payerId, String payeeId, String description, Map<String, String> metadata) {
         this.amount = amount;
         this.currency = currency;
         this.paymentMethod = paymentMethod;
-        this.status = status;
-        this.recurrence = recurrence;
-        this.isFraudulent = isFraudulent;
-        this.fraudReason = fraudReason;
         this.payerId = payerId;
         this.payeeId = payeeId;
         this.description = description;
         this.metadata = metadata;
-        this.refundedAmount = refundedAmount;
-        this.paymentGateway = paymentGateway;
-        this.cancellationReason = cancellationReason;
+    }
+
+    public Payment toEntity(String transactionId) {
+        return new Payment(transactionId, this.amount, this.currency,
+                this.paymentMethod, this.payerId, this.payeeId, this.metadata);
     }
 
     public BigDecimal getAmount() {
@@ -82,38 +71,6 @@ public class PaymentRequestDTO {
 
     public void setPaymentMethod(PaymentMethod paymentMethod) {
         this.paymentMethod = paymentMethod;
-    }
-
-    public PaymentStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(PaymentStatus status) {
-        this.status = status;
-    }
-
-    public RecurrenceType getRecurrence() {
-        return recurrence;
-    }
-
-    public void setRecurrence(RecurrenceType recurrence) {
-        this.recurrence = recurrence;
-    }
-
-    public Boolean getFraudulent() {
-        return isFraudulent;
-    }
-
-    public void setFraudulent(Boolean fraudulent) {
-        isFraudulent = fraudulent;
-    }
-
-    public String getFraudReason() {
-        return fraudReason;
-    }
-
-    public void setFraudReason(String fraudReason) {
-        this.fraudReason = fraudReason;
     }
 
     public String getPayerId() {
@@ -146,29 +103,5 @@ public class PaymentRequestDTO {
 
     public void setMetadata(Map<String, String> metadata) {
         this.metadata = metadata;
-    }
-
-    public BigDecimal getRefundedAmount() {
-        return refundedAmount;
-    }
-
-    public void setRefundedAmount(BigDecimal refundedAmount) {
-        this.refundedAmount = refundedAmount;
-    }
-
-    public String getPaymentGateway() {
-        return paymentGateway;
-    }
-
-    public void setPaymentGateway(String paymentGateway) {
-        this.paymentGateway = paymentGateway;
-    }
-
-    public String getCancellationReason() {
-        return cancellationReason;
-    }
-
-    public void setCancellationReason(String cancellationReason) {
-        this.cancellationReason = cancellationReason;
     }
 }

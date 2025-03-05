@@ -1,22 +1,20 @@
 package com.finguard.apifinguardpayments.web.api;
 
-import com.finguard.apifinguardpayments.domain.*;
+import com.finguard.apifinguardpayments.domain.Payment;
+import com.finguard.apifinguardpayments.domain.PaymentStatus;
+import com.finguard.apifinguardpayments.domain.Refund;
+import com.finguard.apifinguardpayments.web.request.PaymentRequestDTO;
+import com.finguard.apifinguardpayments.web.request.RefundRequestDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @RequestMapping("/api/payments")
 public interface PaymentApi {
 
     @PostMapping
-    ResponseEntity<Payment> createPayment(@RequestParam String transactionId,
-                                          @RequestParam BigDecimal amount,
-                                          @RequestParam Currency currency,
-                                          @RequestParam PaymentMethod paymentMethod,
-                                          @RequestParam String payerId,
-                                          @RequestParam String payeeId);
+    ResponseEntity<Payment> createPayment(@RequestBody PaymentRequestDTO paymentRequest);
 
     @GetMapping("/{id}")
     ResponseEntity<Payment> getPaymentById(@PathVariable Long id);
@@ -25,8 +23,10 @@ public interface PaymentApi {
     ResponseEntity<Payment> getPaymentByTransactionId(@PathVariable String transactionId);
 
     @PatchMapping("/update-status/{transactionId}")
-    ResponseEntity<Payment> updatePaymentStatus(@PathVariable String transactionId,
-                                                @RequestParam PaymentStatus status);
+    ResponseEntity<Payment> updatePaymentStatus(
+            @PathVariable String transactionId,
+            @RequestBody PaymentStatus status
+    );
 
     @DeleteMapping("/{id}")
     ResponseEntity<Void> deletePayment(@PathVariable Long id);
@@ -44,8 +44,7 @@ public interface PaymentApi {
     ResponseEntity<List<Payment>> getFraudulentPayments();
 
     @PostMapping("/refund")
-    ResponseEntity<Refund> processRefund(@RequestParam("transactionId") String transactionId,
-                                         @RequestParam("amount") BigDecimal amount);
+    ResponseEntity<Refund> processRefund(@RequestBody RefundRequestDTO refundRequest);
 
     @PostMapping("/retry/{id}")
     ResponseEntity<Void> retryPayment(@PathVariable Long id);

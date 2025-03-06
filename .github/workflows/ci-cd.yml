@@ -157,7 +157,7 @@ jobs:
         run: |
           mvn verify sonar:sonar \
             -Dsonar.projectKey=saulocapistrano_api-finguard-payments \
-            -Dsonar.organization=finguard \
+            -Dsonar.organization=saulocapistrano \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.login=${{ secrets.SONAR_TOKEN }}
 

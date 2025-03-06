@@ -22,9 +22,9 @@
         <java.version>21</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
-
+        <sonar.projectKey>api-finguard-payments</sonar.projectKey>
         <sonar.organization>saulocapistrano</sonar.organization>
-        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.host.url>https://sonarqube.saulocapistrano</sonar.host.url>
     </properties>
 
 

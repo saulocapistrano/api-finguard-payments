@@ -27,19 +27,14 @@ public class RedisConfig {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
 
-        // Key serializer: Stores keys as plain strings
         template.setKeySerializer(new StringRedisSerializer());
 
-        // Value serializer: Stores values as JSON for better compatibility with objects
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer(customObjectMapper()));
 
-        // Hash key serializer (for hash operations)
         template.setHashKeySerializer(new StringRedisSerializer());
 
-        // Hash value serializer (to store objects inside Redis hashes)
         template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer(customObjectMapper()));
 
-        // Enable transaction support
         template.setEnableTransactionSupport(true);
 
         return template;

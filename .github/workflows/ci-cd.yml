@@ -44,9 +44,8 @@ jobs:
           KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
           KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
           KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-          KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"  # Cria tópicos automaticamente
         options: >-
-          --health-cmd "kafka-topics --bootstrap-server localhost:9092 --list || exit 1"
+          --health-cmd "kafka-topics --bootstrap-server kafka:9092 --list || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
@@ -77,24 +76,27 @@ jobs:
       - name: 🔍 Verificar serviços antes dos testes
         run: |
           echo "Aguardando PostgreSQL..."
-          timeout 60 bash -c 'until echo > /dev/tcp/localhost/5432; do sleep 1; done'
+          until nc -z localhost 5432; do sleep 1; done
           echo "PostgreSQL disponível! ✅"
 
           echo "Aguardando Kafka..."
-          timeout 60 bash -c 'until echo > /dev/tcp/localhost/9092; do sleep 1; done'
+          until nc -z localhost 9092; do sleep 1; done
           echo "Kafka disponível! ✅"
 
           echo "Aguardando Redis..."
-          timeout 60 bash -c 'until echo > /dev/tcp/localhost/6379; do sleep 1; done'
+          until nc -z localhost 6379; do sleep 1; done
           echo "Redis disponível! ✅"
+
+          echo "Criando tópicos no Kafka..."
+          docker exec kafka kafka-topics --create --topic payments --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 || echo "Tópico já existe."
 
       - name: 🔬 Executar testes automatizados
         env:
           DATABASE_URL: jdbc:postgresql://localhost:5432/payments_db
           DATABASE_USERNAME: saulo
           DATABASE_PASSWORD: 123456
-          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
-          REDIS_HOST: localhost
+          KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+          REDIS_HOST: redis
           REDIS_PORT: 6379
         run: mvn test -X
 
@@ -114,13 +116,6 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
           cache: maven
-
-      - name: 📥 Cache do Maven
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
 
       - name: 📦 Build do projeto
         run: mvn clean package -DskipTests
@@ -142,6 +137,20 @@ jobs:
           java-version: '21'
           cache: maven
 
+      - name: 📥 Cache do SonarQube
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: 📥 Cache do Maven
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
       - name: 📊 Analisar qualidade do código com SonarCloud
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -155,7 +164,7 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     needs: sonar
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: 🚀 Checkout do repositório
@@ -174,5 +183,5 @@ jobs:
 
       - name: 📦 Construir e publicar imagem Docker
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/api-finguard-payments:${{ github.sha }} .
-          docker push ${{ secrets.DOCKER_USERNAME }}/api-finguard-payments:${{ github.sha }}
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/api-finguard-payments:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/api-finguard-payments:latest

@@ -36,7 +36,7 @@ jobs:
           ZOOKEEPER_CLIENT_PORT: 2181
 
       kafka:
-        image: confluentinc/cp-all-in-one:latest
+        image: confluentinc/cp-kafka:latest
         ports:
           - 9092:9092
         env:
@@ -46,7 +46,7 @@ jobs:
           KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
           KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"  # Cria tópicos automaticamente
         options: >-
-          --health-cmd "kafka-topics --bootstrap-server kafka:9092 --list || exit 1"
+          --health-cmd "kafka-topics --bootstrap-server localhost:9092 --list || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
